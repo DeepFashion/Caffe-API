@@ -1,12 +1,10 @@
 from django.shortcuts import render
-# from rest_framework import status
 from django.http import HttpResponse
 import json
-# Create your views here.
 import sys
 sys.path.append('/home/ubuntu/caffe-cvprw15/examples/deepFashion/scripts')
 import predict
-import getNN
+import getNear
 import urllib
 import os
 
@@ -15,7 +13,7 @@ def compute(imageURL):
         os.remove('/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/0001.jpg') 
     urllib.urlretrieve(imageURL, '/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/0001.jpg')
     embedding=predict.InputImagePredict('/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/0001.jpg','/home/ubuntu/caffe-cvprw15/examples/deepFashion/label_jabong/SETTINGS.json')
-    result=getNN.computeNN('/home/ubuntu/caffe-cvprw15/examples/deepFashion/label_jabong/SETTINGS.json', embedding)
+    result=getNear.computeNN('/home/ubuntu/caffe-cvprw15/examples/deepFashion/label_jabong/SETTINGS.json', embedding)
     for i in range(len(result)):
         result[i]=result[i].strip()
         result[i]=result[i][8:]

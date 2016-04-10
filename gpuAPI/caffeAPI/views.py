@@ -1,8 +1,6 @@
 from django.shortcuts import render
-# from rest_framework import status
 from django.http import HttpResponse
 import json
-# Create your views here.
 import sys
 sys.path.append('/home/ubuntu/caffe-cvprw15/examples/deepFashion/scripts')
 import predict

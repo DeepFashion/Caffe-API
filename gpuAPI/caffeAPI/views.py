@@ -3,17 +3,35 @@ from django.http import HttpResponse
 import json
 import sys
 sys.path.append('/home/ubuntu/caffe-cvprw15/examples/deepFashion/scripts')
-import predict
+import predictTags as predict
 import getNear
 import urllib
 import os
+import random
+import string
+import caffeClientManager as cCM
+
+SETTINGS_FILE='/home/ubuntu/caffe-cvprw15/examples/deepFashion/label_jabong/SETTINGS.json'
+numThreads=1
+threadPoolObj=cCM.caffeThreadManager(numThreads,SETTINGS_FILE)
+
 
 def compute(imageURL):
-    if os.path.isfile('/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/0001.jpg'):
-        os.remove('/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/0001.jpg') 
-    urllib.urlretrieve(imageURL, '/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/0001.jpg')
-    embedding=predict.InputImagePredict('/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/0001.jpg','/home/ubuntu/caffe-cvprw15/examples/deepFashion/label_jabong/SETTINGS.json')
-    result=getNear.computeNN('/home/ubuntu/caffe-cvprw15/examples/deepFashion/label_jabong/SETTINGS.json', embedding)
+    filename=''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10))+'.jpg'
+    filename='/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/'+filename
+    if os.path.isfile(filename):
+        os.remove(filename) 
+    urllib.urlretrieve(imageURL, filename)
+    classifier=threadPoolObj.getThread()
+    if not classifier:
+        print 'Unable to contact the weaver server'
+        assert False
+    print 'Recieved a Thread'
+    embedding=predict.InputImagePredict(filename,SETTINGS_FILE,"embedding",classifier)
+    
+    threadPoolObj.returnThread(classifier)
+
+    result=getNear.computeNN(SETTINGS_FILE, embedding)
     for i in range(len(result)):
         result[i]=result[i].strip()
         result[i]=result[i][8:]
@@ -23,6 +41,7 @@ def compute(imageURL):
 
 def getNN(request,*args, **kwargs):
     data=dict()
+
     modelName=request.GET.get('modelName','')
     imageURL=request.GET.get('imageURL','')
     data['imageURL']=imageURL

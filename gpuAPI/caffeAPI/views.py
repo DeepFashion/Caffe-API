@@ -11,33 +11,58 @@ import random
 import string
 import caffeClientManager as cCM
 
-SETTINGS_FILE='/home/ubuntu/caffe-cvprw15/examples/deepFashion/label_jabong/SETTINGS.json'
+SETTINGS_FILE_EMBEDDING='/home/ubuntu/caffe-cvprw15/examples/deepFashion/label_jabong/SETTINGS.json'
 numThreads=1
-threadPoolObj=cCM.caffeThreadManager(numThreads,SETTINGS_FILE)
+threadPoolObjEmbedding=cCM.caffeThreadManager(numThreads,SETTINGS_FILE_EMBEDDING)
+
+SETTINGS_FILE_TAGS='/home/ubuntu/caffe-cvprw15/examples/deepFashion/multimodal/SETTINGS.json'
+numThreads=1
+threadPoolObjTags=cCM.caffeThreadManager(numThreads,SETTINGS_FILE_TAGS)
 
 
-def compute(imageURL):
+
+def computeNN(imageURL):
     filename=''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10))+'.jpg'
     filename='/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/'+filename
     if os.path.isfile(filename):
         os.remove(filename) 
     urllib.urlretrieve(imageURL, filename)
-    classifier=threadPoolObj.getThread()
+    classifier=threadPoolObjEmbedding.getThread()
     if not classifier:
-        print 'Unable to contact the weaver server'
+        print 'appears to be some problem with gpu'
         assert False
     print 'Recieved a Thread'
-    embedding=predict.InputImagePredict(filename,SETTINGS_FILE,"embedding",classifier)
+    embedding=predict.InputImagePredict(filename,SETTINGS_FILE_EMBEDDING,"embedding",classifier)
     
-    threadPoolObj.returnThread(classifier)
+    threadPoolObjEmbedding.returnThread(classifier)
 
-    result=getNear.computeNN(SETTINGS_FILE, embedding)
+    result=getNear.computeNN(SETTINGS_FILE_EMBEDDING, embedding)
     for i in range(len(result)):
         result[i]=result[i].strip()
         result[i]=result[i][8:]
         result[i]=result[i].replace("_", "/")
         result[i]=result[i].replace("catalog/s", "catalog_s")
     return result
+
+
+def computeTags(imageURL):
+    filename=''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10))+'.jpg'
+    filename='/home/ubuntu/caffe-cvprw15/examples/deepFashion/tmp/'+filename
+    if os.path.isfile(filename):
+        os.remove(filename) 
+    urllib.urlretrieve(imageURL, filename)
+    classifier=threadPoolObjTags.getThread()
+    if not classifier:
+        print 'appears to be some problem with gpu'
+        assert False
+    print 'Recieved a Thread'
+    tags=predict.InputImagePredict(filename,SETTINGS_FILE_TAGS,"tags",classifier)
+    
+    threadPoolObjTags.returnThread(classifier)
+
+    return tags
+
+
 
 def getNN(request,*args, **kwargs):
     data=dict()
@@ -52,8 +77,25 @@ def getNN(request,*args, **kwargs):
         data['result']=dict()
     else:
         data['message']="getting results"
-        data['result']=compute(imageURL)
+        data['result']=computeNN(imageURL)
 
     return HttpResponse(json.dumps(data), content_type="application/json")  
 
+
+def getTags(request,*args, **kwargs):
+    data=dict()
+
+    modelName=request.GET.get('modelName','')
+    imageURL=request.GET.get('imageURL','')
+    data['imageURL']=imageURL
+    if modelName=="":
+        print "Using Default model"
+    if imageURL=="":
+        data['message']="empty field"
+        data['result']=dict()
+    else:
+        data['message']="getting results"
+        data['result']=computeTags(imageURL)
+
+    return HttpResponse(json.dumps(data), content_type="application/json")  
 

@@ -63,15 +63,15 @@ def handle_client(conn, addr):
 	global last_time
         data = conn.recv(1024)
         if data == 'i am alive':
-                #pcolor(strftime("%H:%M:%S", time.localtime())  + ': Heartbeat received from ' + addr[0], "g")
-
+                pcolor(strftime("%H:%M:%S", time.localtime())  + ': Heartbeat received from ' + addr[0], "g")
 		last_time = time.time()
         conn.close()
+	print "ending connection"
 
 
 def main(ip="0.0.0.0",timer1=2):
+	print "main called"
 	global last_time
-	print "Started"
 	global timer
 	global sock
 	global status
@@ -104,21 +104,11 @@ thread.start()
 thread = Thread(target = check_heartbeat, args = ())
 thread.start()
 
-print "start"
-
-def getNN(request,*args, **kwargs):
-    data=dict()
-    return HttpResponse(json.dumps(data), content_type="application/json")
-
-
-def getTags(request,*args, **kwargs):
-    data=dict()
-    return HttpResponse(json.dumps(data), content_type="application/json")
-
-
 def getStatus(request,*args, **kwargs):
-    data=dict()
     global status
+    data=dict()
+    modelName=request.GET.get('modelName','')
+    imageURL=request.GET.get('imageURL','')
     data['status']=status
     return HttpResponse(json.dumps(data), content_type="application/json")	
 
